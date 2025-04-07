@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chest X-ray COVID-19 Diagnosis</title>
+    <style>
+        body {
+            font-family: 'Roboto', Arial, sans-serif;
+            background: #111827;
+            color: #e5e7eb;
+            line-height: 1.6;
+            height: 100vh;
+            overflow: hidden;
+            margin: 0;
+        }
+        .container {
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+        }
+        header {
+            background: #0f172a;
+            color: #e5e7eb;
+            padding: 10px 20px;
+            text-align: center;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.6);
+            position: fixed;
+            width: 100%;
+            top: 0;
+            z-index: 1000;
+            height: 50px;
+        }
+        header h1 {
+            font-size: 1.6em;
+            font-weight: 500;
+        }
+        main {
+            display: flex;
+            flex: 1;
+            margin-top: 50px;
+            overflow-y: auto;
+            padding: 20px;
+            gap: 20px;
+        }
+        .left-panel, .right-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        .left-panel { flex: 2; }
+        .right-panel { flex: 1; }
+        .section {
+            background: #1e293b;
+            border-radius: 12px;
+            padding: 25px;
+            box-shadow: 0 6px 18px rgba(0,0,0,0.5);
+        }
+        h2 {
+            color: #9ca3af;
+            margin-bottom: 15px;
+            font-size: 1.6em;
+            border-bottom: 1px solid #374151;
+            padding-bottom: 8px;
+        }
+        input[type="file"], button, input[type="text"] {
+            padding: 12px 25px;
+            border-radius: 10px;
+            font-size: 1.1em;
+        }
+        input[type="file"] {
+            border: 2px dashed #374151;
+            width: 100%;
+            margin-bottom: 15px;
+            background: #111827;
+            color: #e5e7eb;
+        }
+        button {
+            background: #374151;
+            color: #e5e7eb;
+            border: none;
+            cursor: pointer;
+        }
+        button:hover { background: #4b5563; }
+        button:disabled { background: #1e293b; cursor: not-allowed; }
+        .result-section { display: none; }
+        .result-details {
+            background: #111827;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+        .result-details p {
+            font-size: 1.2em;
+            margin: 12px 0;
+        }
+        .result-details p strong { color: #9ca3af; }
+        .image-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 25px;
+            margin: 25px 0;
+        }
+        .image-box {
+            text-align: center;
+        }
+        .image-box h3 {
+            color: #e5e7eb;
+            margin-bottom: 15px;
+            font-size: 1.4em;
+        }
+        .image-box img {
+            max-width: 100%;
+            border-radius: 12px;
+            box-shadow: 0 6px 18px rgba(0,0,0,0.4);
+        }
+        .image-box p {
+            font-size: 1em;
+            color: #6b7280;
+            margin-top: 12px;
+        }
+        .report {
+            white-space: pre-wrap;
+            background: #111827;
+            padding: 25px;
+            border-radius: 12px;
+            font-size: 1.1em;
+            border-left: 6px solid #374151;
+            flex: 1;
+            overflow-y: auto;
+        }
+        .chat-box {
+            border: 2px solid #374151;
+            padding: 20px;
+            height: 350px;
+            overflow-y: auto;
+            background: #111827;
+            border-radius: 12px;
+            margin-bottom: 15px;
+        }
+        .chat-box p {
+            margin: 15px 0;
+            padding: 12px;
+            background: #1e293b;
+            border-radius: 10px;
+        }
+        .chat-box p strong { color: #9ca3af; }
+        .chat-input {
+            width: 70%;
+            padding: 12px;
+            border: 2px solid #374151;
+            border-radius: 10px;
+            margin-right: 15px;
+            background: #111827;
+            color: #e5e7eb;
+            font-size: 1.1em;
+        }
+        .video-feed {
+            width: 100%;
+            max-width: 320px;
+            border-radius: 12px;
+            box-shadow: 0 6px 18px rgba(0,0,0,0.4);
+        }
+        .vital-signs-boxes {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 12px;
+            margin-top: 15px;
+        }
+        .vital-sign {
+            background: #111827;
+            padding: 12px;
+            border-radius: 10px;
+            text-align: center;
+            font-size: 1.2em;
+        }
+        .status {
+            font-size: 1.2em;
+            margin-top: 15px;
+        }
+        .loading { color: #6b7280; }
+        .error { color: #ef4444; }
+        @media (max-width: 1200px) {
+            main { flex-direction: column; }
+            .left-panel, .right-panel { flex: none; width: 100%; }
+            .image-container { grid-template-columns: 1fr; }
+        }
+        @media (max-width: 768px) {
+            .chat-input { width: 100%; margin-bottom: 15px; }
+            .chat-section button { width: 100%; }
+            main { padding: 10px; }
+        }
+    </style>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Chest X-ray COVID-19 Diagnosis</h1>
+        </header>
+        <main>
+            <div class="left-panel">
+                <section class="upload-section section">
+                    <h2>Upload X-ray</h2>
+                    <input type="file" id="xrayInput" accept="image/*">
+                    <button id="uploadButton" onclick="uploadFile()">Upload and Analyze</button>
+                    <div class="status loading" id="loading" style="display: none;">Analyzing...</div>
+                    <div class="status error" id="error" style="display: none;"></div>
+                </section>
+                <section class="result-section section" id="result">
+                    <h2>Analysis Result</h2>
+                    <div class="result-details">
+                        <p><strong>Prediction:</strong> <span id="prediction"></span></p>
+                        <p><strong>Confidence:</strong> <span id="confidence"></span></p>
+                        <p><strong>Vital Signs:</strong></p>
+                        <p>Heart Rate: <span id="result_hr"></span> bpm</p>
+                        <p>Respiratory Rate: <span id="result_rr"></span> breaths/min</p>
+                        <p>Oxygen Saturation: <span id="result_spo2"></span>%</p>
+                        <p>Blood Pressure: <span id="result_bp"></span> mmHg</p>
+                        <p>Temperature: <span id="result_temp"></span>°C</p>
+                    </div>
+                    <div class="image-container">
+                        <div class="image-box">
+                            <h3>Uploaded X-ray</h3>
+                            <img id="uploadedImage" src="" alt="Uploaded X-ray">
+                        </div>
+                        <div class="image-box">
+                            <h3>XAI Visualization</h3>
+                            <img id="xaiImage" src="" alt="XAI Visualization">
+                            <p>Yellow: Least Used | Orange: Medium Used | Red: Most Used</p>
+                        </div>
+                    </div>
+                    <h2>Medical Report</h2>
+                    <div class="report" id="report"></div>
+                </section>
+                <section class="chat-section section">
+                    <h2>Chat with MedBot</h2>
+                    <div class="chat-box" id="chatBox"></div>
+                    <input type="text" class="chat-input" id="chatInput" placeholder="Ask anything...">
+                    <button onclick="sendChat()">Send</button>
+                </section>
+            </div>
+            <div class="right-panel">
+                <section class="video-section section">
+                    <h2>Vital Signs Monitor</h2>
+                    <img src="/video_feed" class="video-feed" alt="Webcam Feed">
+                    <div class="vital-signs-boxes">
+                        <div class="vital-sign">Heart Rate: <span id="hr"></span> bpm</div>
+                        <div class="vital-sign">Respiratory Rate: <span id="rr"></span> breaths/min</div>
+                        <div class="vital-sign">Oxygen Saturation: <span id="spo2"></span>%</div>
+                        <div class="vital-sign">Blood Pressure: <span id="bp"></span> mmHg</div>
+                        <div class="vital-sign">Temperature: <span id="temp"></span>°C</div>
+                    </div>
+                </section>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        let currentPrediction = '';
+        let currentConfidence = 0;
+        let currentVitalSigns = {};
+
+        async function uploadFile() {
+            const fileInput = document.getElementById('xrayInput');
+            const file = fileInput.files[0];
+            const uploadButton = document.getElementById('uploadButton');
+            const loading = document.getElementById('loading');
+            const errorDiv = document.getElementById('error');
+
+            if (!file) {
+                alert('Please select a file');
+                return;
+            }
+
+            uploadButton.disabled = true;
+            loading.style.display = 'block';
+            errorDiv.style.display = 'none';
+            errorDiv.textContent = '';
+
+            const formData = new FormData();
+            formData.append('file', file);
+
+            try {
+                const response = await fetch('/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    throw new Error(`Server error: ${response.status} - ${errorText}`);
+                }
+
+                const data = await response.json();
+                if (data.error) {
+                    throw new Error(data.error);
+                }
+
+                document.getElementById('result').style.display = 'block';
+                document.getElementById('prediction').textContent = data.prediction;
+                document.getElementById('confidence').textContent = data.confidence.toFixed(2);
+                document.getElementById('result_hr').textContent = data.vital_signs.HR;
+                document.getElementById('result_rr').textContent = data.vital_signs.RR;
+                document.getElementById('result_spo2').textContent = data.vital_signs.SpO2;
+                document.getElementById('result_bp').textContent = data.vital_signs.BP;
+                document.getElementById('result_temp').textContent = data.vital_signs.Temp;
+                document.getElementById('hr').textContent = data.vital_signs.HR;
+                document.getElementById('rr').textContent = data.vital_signs.RR;
+                document.getElementById('spo2').textContent = data.vital_signs.SpO2;
+                document.getElementById('bp').textContent = data.vital_signs.BP;
+                document.getElementById('temp').textContent = data.vital_signs.Temp;
+                document.getElementById('uploadedImage').src = data.image_url + '?t=' + new Date().getTime();
+                document.getElementById('xaiImage').src = data.xai_url + '?t=' + new Date().getTime();
+                document.getElementById('report').textContent = data.report;
+                currentPrediction = data.prediction;
+                currentConfidence = data.confidence;
+                currentVitalSigns = data.vital_signs;
+            } catch (error) {
+                console.error('Upload error:', error);
+                errorDiv.textContent = `Error: ${error.message}`;
+                errorDiv.style.display = 'block';
+            } finally {
+                uploadButton.disabled = false;
+                loading.style.display = 'none';
+            }
+        }
+
+        async function sendChat() {
+            const question = document.getElementById('chatInput').value;
+            if (!question) return;
+
+            const chatBox = document.getElementById('chatBox');
+            chatBox.innerHTML += `<p><strong>You:</strong> ${question}</p>`;
+
+            try {
+                const response = await fetch('/chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        question: question,
+                        prediction: currentPrediction,
+                        confidence: currentConfidence,
+                        vital_signs: currentVitalSigns
+                    })
+                });
+                const data = await response.json();
+                chatBox.innerHTML += `<p><strong>MedBot:</strong> ${data.response}</p>`;
+                chatBox.scrollTop = chatBox.scrollHeight;
+                document.getElementById('chatInput').value = '';
+            } catch (error) {
+                console.error('Chat error:', error);
+                chatBox.innerHTML += `<p><strong>Error:</strong> Could not get response</p>`;
+            }
+        }
+    </script>
+</body>
+</html>
